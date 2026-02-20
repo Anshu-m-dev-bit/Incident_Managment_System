@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Update Incident</title>
+</head>
+<body>
+    <h2>Update Incident {{ incident.id }}</h2>
+
+    <form method="POST">
+        <label>Field:</label>
+        <select name="field">
+            <option value="status">Status</option>
+            <option value="description">Description</option>
+            <option value="severity">Severity</option>
+        </select>
+        <br><br>
+
+        <label>New Value:</label>
+        <input type="text" name="value" required>
+        <br><br>
+
+        <button type="submit">Update</button>
+    </form>
+
+    <br>
+    <a href="/">Back</a>
+</body>
+</html>

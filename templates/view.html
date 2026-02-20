@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Incident</title>
+</head>
+<body>
+
+    <h2>Incident Details</h2>
+
+    <p><strong>ID:</strong> {{ incident.id }}</p>
+    <p><strong>Service:</strong> {{ incident.service }}</p>
+    <p><strong>Severity:</strong> {{ incident.severity }}</p>
+    <p><strong>Status:</strong> {{ incident.status }}</p>
+    <p><strong>Description:</strong> {{ incident.description }}</p>
+    <p><strong>Created At:</strong> {{ incident.created_at }}</p>
+
+    <br>
+
+    <a href="{{ url_for('update', iid=incident.id) }}">Update</a> |
+    <a href="{{ url_for('delete', iid=incident.id) }}">Delete</a> |
+    <a href="{{ url_for('index') }}">Back to Home</a>
+
+</body>
+</html>

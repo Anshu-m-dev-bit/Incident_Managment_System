@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Incident Management Tracker</title>
+</head>
+<body>
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Management</title>
+</head>
+<body>
+    <h1>Incident Management</h1>
+    <form method="POST" action="/">
+        <label for="operation">Choose an operation:</label>
+        <select name="operation" id="operation">
+            <option value="create">Create Incident</option>
+            <option value="view">View Incidents</option>
+            <option value="update">Update Incident</option>
+            <option value="delete">Delete Incident</option>
+        </select>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
+
+<hr>
+
+<!-- 
+    <h2>Incident Management Tracker</h2>
+
+    {% if incidents %}
+    <table border="1" cellpadding="10">
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Severity</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for incident in incidents %}
+        <tr>
+            <td>{{ incident.id }}</td>
+            <td>{{ incident.title }}</td>
+            <td>{{ incident.description }}</td>
+            <td>{{ incident.status }}</td>
+            <td>{{ incident.severity }}</td>
+            <td>
+                <a href="{{ url_for('update', iid=incident.id) }}">Update</a> |
+                <a href="{{ url_for('delete', iid=incident.id) }}">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+        <p>No incidents found.</p>
+    {% endif %} -->
+
+    
+
+</body>
+</html>
