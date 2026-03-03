@@ -5,7 +5,7 @@ services:
   db:
     image: mariadb:10.6
     environment:
-      MYSQL_ROOT_PASSWORD: srinu
+      MYSQL_ROOT_PASSWORD: password123
       MYSQL_DATABASE: pypro
       MYSQL_USER: pyuser
       MYSQL_PASSWORD: py123
