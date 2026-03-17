@@ -1,5 +1,6 @@
 from config import get_db_connection
 from datetime import datetime
+from ai_helper import get_ai_analysis
 
 
 ALLOWED_STATUSES = ["Open", "Investigating", "Mitigated", "Resolved"]
@@ -49,9 +50,17 @@ def create_incident(service, severity, description, status):
 
         incident_code = _generate_incident_code(cursor)
 
+        ai_response = get_ai_analysis(
+            service=service,
+            error=description,   # using description as error/logs for now
+            logs=description,
+            impact="Not specified",
+            severity=severity
+        )
+
         query = """
             INSERT INTO incidents_p
-            (incident_code, service, severity, description, status, created_at)
+            (incident_code, service, severity, description, status, created_at, ai_analysis)
             VALUES (%s, %s, %s, %s, %s, %s)
         """
 
@@ -61,7 +70,8 @@ def create_incident(service, severity, description, status):
             severity,
             description,
             status,
-            datetime.now()
+            datetime.now(),
+            ai_response
         )
 
         cursor.execute(query, values)

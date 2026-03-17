@@ -5,5 +5,6 @@ CREATE TABLE IF NOT EXISTS incidents_p (
     severity VARCHAR(50),
     description TEXT,
     status VARCHAR(50),
+    ai_analysis TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
