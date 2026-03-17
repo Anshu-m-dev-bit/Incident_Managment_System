@@ -52,16 +52,17 @@ def create_incident(service, severity, description, status):
 
         ai_response = get_ai_analysis(
             service=service,
-            error=description,   # using description as error/logs for now
+            error=description,
             logs=description,
             impact="Not specified",
             severity=severity
         )
 
+        # ✅ FIXED: added one more %s
         query = """
             INSERT INTO incidents_p
             (incident_code, service, severity, description, status, created_at, ai_analysis)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
 
         values = (
@@ -276,7 +277,6 @@ def delete_incident(incident_id):
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        # Check if exists
         cursor.execute(
             "SELECT status FROM incidents_p WHERE incident_code = %s",
             (incident_id,)
@@ -289,7 +289,6 @@ def delete_incident(incident_id):
         if result["status"] != "Resolved":
             return False, "Can only delete incidents with status 'Resolved'"
 
-        # Delete
         cursor.execute(
             "DELETE FROM incidents_p WHERE incident_code = %s",
             (incident_id,)

@@ -44,12 +44,18 @@ def create_page():
         description = request.form.get('description')
         status = request.form.get('status')
 
+        # ✅ Basic validation (prevents weird DB errors)
+        if not all([service, severity, description, status]):
+            return "All fields are required", 400
+
         try:
             create_incident(service, severity, description, status)
             flash("Incident created successfully.")
             return redirect(url_for('index'))
 
         except Exception as e:
+            # ✅ Better logging
+            print("CREATE ERROR:", str(e))
             return f"Error creating incident: {str(e)}", 500
 
     return render_template('create.html')
@@ -66,6 +72,10 @@ def search(operation):
 
     if request.method == 'POST':
         iid = request.form.get('iid')
+
+        if not iid:
+            return "Incident ID is required", 400
+
         return redirect(url_for(operation, iid=iid))
 
     return render_template('search.html', operation=operation)
@@ -99,6 +109,9 @@ def update(iid):
     if request.method == 'POST':
         field = request.form.get('field')
         value = request.form.get('value')
+
+        if not field or not value:
+            return "Field and value are required", 400
 
         if field == 'status':
             ok, msg = update_status(iid, value)
