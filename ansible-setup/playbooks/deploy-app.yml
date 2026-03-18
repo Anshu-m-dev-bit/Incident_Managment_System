@@ -29,7 +29,7 @@
       pip:
         name:
           - kubernetes
-          - openshift
+          - openshift  # optional
         executable: /usr/bin/python3
 
     # -----------------------------
@@ -67,7 +67,7 @@
         state: restarted
 
     # -----------------------------
-    # Optional: Wait for pods to be ready (recommended)
+    # Step 6: Wait for pods to be ready
     # -----------------------------
     - name: Wait for deployment rollout to complete
       shell: kubectl rollout status deployment/incident-app --timeout=120s
