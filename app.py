@@ -8,6 +8,11 @@ from db_operations import (
     update_severity,
     delete_incident
 )
+from prometheus_client import Counter, generate_latest
+from flask import Response
+
+# Example metric
+REQUEST_COUNT = Counter('app_requests_total', 'Total number of requests')
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # Required for flash messages
@@ -168,6 +173,16 @@ def list_all():
     incidents = list_incidents()
     return render_template('list.html', incidents=incidents)
 
+
+
+@app.route('/metrics')
+def home():
+    REQUEST_COUNT.inc()
+    return "Hello World"
+
+@app.route('/metrics')
+def metrics():
+    return Response(generate_latest(), mimetype='text/plain')
 
 # -------------------------
 # RUN APP

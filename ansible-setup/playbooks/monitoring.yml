@@ -1,23 +1,130 @@
-- name: Setup Monitoring (Prometheus + Grafana)
+- name: Install Node Exporter on App Server
   hosts: ec2
-  become: true
+  become: yes
+
+  vars:
+    node_exporter_version: "1.7.0"
+
+  tasks:
+    - name: Install dependencies
+      yum:
+        name: wget
+        state: present
+
+    - name: Download Node Exporter
+      get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        dest: /tmp/node_exporter.tar.gz
+
+    - name: Extract Node Exporter
+      unarchive:
+        src: /tmp/node_exporter.tar.gz
+        dest: /tmp/
+        remote_src: yes
+
+    - name: Move binary
+      command: mv /tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter /usr/local/bin/
+
+    - name: Create service
+      copy:
+        dest: /etc/systemd/system/node_exporter.service
+        content: |
+          [Unit]
+          Description=Node Exporter
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/local/bin/node_exporter
+
+          [Install]
+          WantedBy=default.target
+
+    - name: Start Node Exporter
+      systemd:
+        name: node_exporter
+        enabled: yes
+        state: started
+
+
+# ---------------- PROMETHEUS + GRAFANA ----------------
+
+- name: Install Prometheus & Grafana on Monitoring Server
+  hosts: monitoring
+  become: yes
+
+  vars:
+    prometheus_version: "2.48.0"
+    app_private_ip: "172.31.xx.xx"   # 🔥 REPLACE THIS
 
   tasks:
 
-    - name: Run Prometheus container
-      docker_container:
-        name: prometheus
-        image: prom/prometheus
-        state: started
-        restart_policy: always
-        ports:
-          - "9090:9090"
+    - name: Install dependencies
+      yum:
+        name:
+          - wget
+          - tar
+        state: present
 
-    - name: Run Grafana container
-      docker_container:
-        name: grafana
-        image: grafana/grafana
+    - name: Download Prometheus
+      get_url:
+        url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+        dest: /tmp/prometheus.tar.gz
+
+    - name: Extract Prometheus
+      unarchive:
+        src: /tmp/prometheus.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: Rename folder
+      command: mv /opt/prometheus-{{ prometheus_version }}.linux-amd64 /opt/prometheus
+
+    - name: Create Prometheus config
+      copy:
+        dest: /opt/prometheus/prometheus.yml
+        content: |
+          global:
+            scrape_interval: 15s
+
+          scrape_configs:
+            - job_name: 'node_exporter'
+              static_configs:
+                - targets: ['{{ app_private_ip }}:9100']
+
+    - name: Create Prometheus service
+      copy:
+        dest: /etc/systemd/system/prometheus.service
+        content: |
+          [Unit]
+          Description=Prometheus
+          After=network.target
+
+          [Service]
+          ExecStart=/opt/prometheus/prometheus --config.file=/opt/prometheus/prometheus.yml
+
+          [Install]
+          WantedBy=default.target
+
+    - name: Start Prometheus
+      systemd:
+        name: prometheus
+        enabled: yes
         state: started
-        restart_policy: always
-        ports:
-          - "3000:3000"
+
+    - name: Add Grafana repo
+      yum_repository:
+        name: grafana
+        description: Grafana Repo
+        baseurl: https://packages.grafana.com/oss/rpm
+        gpgcheck: no
+
+    - name: Install Grafana
+      yum:
+        name: grafana
+        state: present
+
+    - name: Start Grafana
+      systemd:
+        name: grafana-server
+        enabled: yes
+        state: started
