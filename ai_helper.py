@@ -2,12 +2,12 @@ from openai import OpenAI
 import os
 
 def get_ai_analysis(service, error, logs, impact, severity):
-    api_key = os.getenv("ZAI_API_KEY")  # changed env variable
+    api_key = os.getenv("OPENAI_API_KEY")  # changed env variable
 
-    print("DEBUG: ZAI_API_KEY =", "FOUND" if api_key else "MISSING")
+    print("DEBUG: OPENAI_API_KEY =", "FOUND" if api_key else "MISSING")
 
     if not api_key:
-        return "AI analysis is currently unavailable because ZAI_API_KEY is not set."
+        return "AI analysis is currently unavailable because OPENAI_API_KEY is not set."
 
     try:
         # 🔥 Change: base_url added for Z.ai
