@@ -6,7 +6,7 @@
 
     - name: Copy k8s files to EC2
       copy:
-        src: ../..k8s/
+        src: ../../k8s/
         dest: ~/k8s/
 
     - name: Apply Kubernetes deployment
