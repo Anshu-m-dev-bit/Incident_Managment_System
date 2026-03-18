@@ -12,6 +12,8 @@
     # Copy requirements and install Python dependencies
     COPY requirements.txt .
     RUN pip install --no-cache-dir --default-timeout=100 --prefix=/install -r requirements.txt
+
+    RUN pip install --no-cache-dir kubernetes openshift
     
     # ---------- Stage 2: Final Runtime Image ----------
     FROM python:3.10-slim
