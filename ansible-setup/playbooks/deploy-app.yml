@@ -1,6 +1,8 @@
 - name: Deploy app to Kubernetes
   hosts: ec2
   become: false
+  vars:
+    ansible_python_interpreter: /usr/bin/python3  # ensures the correct Python is used
 
   tasks:
 
@@ -9,6 +11,27 @@
         src: ../../k8s/
         dest: ~/k8s/
 
+    # -----------------------------
+    # NEW TASKS: install dependencies
+    # -----------------------------
+    - name: Ensure python3-pip is installed
+      become: true
+      apt:
+        name: python3-pip
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Install Python Kubernetes library
+      become: true
+      pip:
+        name:
+          - kubernetes
+          - openshift  # optional, good to have
+        executable: python3
+
+    # -----------------------------
+    # Existing tasks: secret + deployment
+    # -----------------------------
     - name: Ensure OpenAI API key secret exists in Kubernetes
       kubernetes.core.k8s:
         state: present
