@@ -19,7 +19,7 @@
       apt:
         name: python3-pip
         state: present
-      when: ansible_os_family == "Debian"
+      when: ansible_facts["os_family"] == "Debian"
 
     - name: Install Python Kubernetes library
       become: true
@@ -27,7 +27,7 @@
         name:
           - kubernetes
           - openshift  # optional, good to have
-        executable: python3
+        executable: /usr/bin/python3
 
     # -----------------------------
     # Existing tasks: secret + deployment
