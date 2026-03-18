@@ -1,75 +1,18 @@
 - name: Deploy app to Kubernetes
   hosts: ec2
   become: false
-  vars:
-    ansible_python_interpreter: /usr/bin/python3  # ensures the correct Python is used
 
   tasks:
 
-    # -----------------------------
-    # Step 1: Copy k8s files to EC2
-    # -----------------------------
     - name: Copy k8s files to EC2
       copy:
-        src: ../../k8s/
+        src: ../..k8s/
         dest: ~/k8s/
 
-    # -----------------------------
-    # Step 2: Ensure Python3 and pip are installed
-    # -----------------------------
-    - name: Ensure Python3 and pip are installed
-      become: true
-      apt:
-        name:
-          - python3
-          - python3-pip
-        state: present
-
-    # -----------------------------
-    # Step 3: Install Python Kubernetes library
-    # -----------------------------
-    - name: Install Python Kubernetes library
-      become: true
-      shell: |
-        python3 -m pip install --upgrade pip
-        python3 -m pip install kubernetes openshift
-
-    # -----------------------------
-    # Step 4: Ensure OpenAI API key secret exists
-    # -----------------------------
-    - name: Ensure OpenAI API key secret exists in Kubernetes
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: openai-secret
-            namespace: default
-          type: Opaque
-          stringData:
-            OPENAI_API_KEY: "{{ lookup('env', 'OPENAI_API_KEY') }}"
-
-    # -----------------------------
-    # Step 5: Apply Kubernetes deployment
-    # -----------------------------
     - name: Apply Kubernetes deployment
       shell: |
         kubectl apply -f ~/k8s/deployment.yaml
         kubectl apply -f ~/k8s/service.yaml
 
-    # -----------------------------
-    # Step 6: Restart deployment so pods pick up updated secret
-    # -----------------------------
     - name: Restart deployment
-      kubernetes.core.k8s:
-        kind: Deployment
-        namespace: default
-        name: incident-app
-        state: restarted
-
-    # -----------------------------
-    # Step 7: Wait for pods to be ready
-    # -----------------------------
-    - name: Wait for deployment rollout to complete
-      shell: kubectl rollout status deployment/incident-app --timeout=120s
+      shell: kubectl rollout restart deployment incident-app
