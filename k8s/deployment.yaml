@@ -26,3 +26,8 @@ spec:
           value: "Forgot247"
         - name: DB_NAME
           value: "pypro"
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-secret
+              key: OPENAI_API_KEY

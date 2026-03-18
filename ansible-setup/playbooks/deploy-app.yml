@@ -9,10 +9,27 @@
         src: ../../k8s/
         dest: ~/k8s/
 
+    - name: Ensure OpenAI API key secret exists in Kubernetes
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: openai-secret
+            namespace: default
+          type: Opaque
+          stringData:
+            OPENAI_API_KEY: "{{ lookup('env', 'OPENAI_API_KEY') }}"
+
     - name: Apply Kubernetes deployment
       shell: |
         kubectl apply -f ~/k8s/deployment.yaml
         kubectl apply -f ~/k8s/service.yaml
 
-    - name: Restart deployment
-      shell: kubectl rollout restart deployment incident-app
+    - name: Restart deployment so pods pick up updated secret
+      kubernetes.core.k8s:
+        kind: Deployment
+        namespace: default
+        name: incident-app
+        state: restarted
