@@ -76,8 +76,10 @@
         dest: /opt/
         remote_src: yes
 
-    - name: Rename folder
+    - name: Move Prometheus folder
       command: mv /opt/prometheus-{{ prometheus_version }}.linux-amd64 /opt/prometheus
+      args:
+        creates: /opt/prometheus
 
     - name: Create Prometheus config
       copy:
