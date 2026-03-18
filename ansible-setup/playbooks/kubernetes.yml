@@ -1,0 +1,22 @@
+- name: Install K3s Kubernetes
+  hosts: ec2
+  become: true
+
+  tasks:
+
+    - name: Install K3s
+      shell: |
+        curl -sfL https://get.k3s.io | sh -
+
+    - name: Wait for K3s to be ready
+      shell: kubectl get nodes
+      register: result
+      retries: 5
+      delay: 10
+      until: result.rc == 0
+
+    - name: Copy kubeconfig
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: ./kubeconfig
+        flat: yes

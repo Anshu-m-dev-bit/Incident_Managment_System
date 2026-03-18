@@ -1,0 +1,34 @@
+- name: Install Docker
+  hosts: all
+  become: true
+
+  tasks:
+
+    - name: Install dependencies
+      package:
+        name:
+          - yum-utils
+          - device-mapper-persistent-data
+          - lvm2
+        state: present
+
+    - name: Add Docker repo
+      command: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      ignore_errors: yes
+
+    - name: Install Docker
+      package:
+        name: docker
+        state: present
+
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes

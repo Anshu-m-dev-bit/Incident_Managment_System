@@ -1,0 +1,18 @@
+- name: Deploy app to Kubernetes
+  hosts: ec2
+  become: false
+
+  tasks:
+
+    - name: Copy k8s files to EC2
+      copy:
+        src: ../../k8s/
+        dest: ~/k8s/
+
+    - name: Apply Kubernetes deployment
+      shell: |
+        kubectl apply -f ~/k8s/deployment.yaml
+        kubectl apply -f ~/k8s/service.yaml
+
+    - name: Restart deployment
+      shell: kubectl rollout restart deployment incident-app

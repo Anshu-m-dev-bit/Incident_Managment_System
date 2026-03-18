@@ -1,0 +1,5 @@
+- import_playbook: docker.yml
+- import_playbook: kubernetes.yml
+- import_playbook: nginx.yml
+- import_playbook: monitoring.yml
+- import_playbook: database.yml

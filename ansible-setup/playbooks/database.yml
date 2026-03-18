@@ -1,0 +1,11 @@
+- name: Initialize RDS Database
+  hosts: localhost
+  tasks:
+
+    - name: Run SQL script
+      shell: |
+        mysql -h database-1.c9isuqawg6tv.eu-north-1.rds.amazonaws.com \
+        -u admin \
+        -pForgot247 \
+        --ssl \
+        pypro < ../db-init/init.sql

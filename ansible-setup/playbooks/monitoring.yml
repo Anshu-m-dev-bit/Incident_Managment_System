@@ -1,0 +1,23 @@
+- name: Setup Monitoring (Prometheus + Grafana)
+  hosts: ec2
+  become: true
+
+  tasks:
+
+    - name: Run Prometheus container
+      docker_container:
+        name: prometheus
+        image: prom/prometheus
+        state: started
+        restart_policy: always
+        ports:
+          - "9090:9090"
+
+    - name: Run Grafana container
+      docker_container:
+        name: grafana
+        image: grafana/grafana
+        state: started
+        restart_policy: always
+        ports:
+          - "3000:3000"
