@@ -6,13 +6,16 @@
 
   tasks:
 
+    # -----------------------------
+    # Step 1: Copy k8s files to EC2
+    # -----------------------------
     - name: Copy k8s files to EC2
       copy:
         src: ../../k8s/
         dest: ~/k8s/
 
     # -----------------------------
-    # NEW TASKS: install dependencies
+    # Step 2: Install Python dependencies
     # -----------------------------
     - name: Ensure python3-pip is installed
       become: true
@@ -26,11 +29,11 @@
       pip:
         name:
           - kubernetes
-          - openshift  # optional, good to have
+          - openshift
         executable: /usr/bin/python3
 
     # -----------------------------
-    # Existing tasks: secret + deployment
+    # Step 3: Ensure OpenAI secret exists
     # -----------------------------
     - name: Ensure OpenAI API key secret exists in Kubernetes
       kubernetes.core.k8s:
@@ -45,14 +48,26 @@
           stringData:
             OPENAI_API_KEY: "{{ lookup('env', 'OPENAI_API_KEY') }}"
 
+    # -----------------------------
+    # Step 4: Apply Kubernetes deployment
+    # -----------------------------
     - name: Apply Kubernetes deployment
       shell: |
         kubectl apply -f ~/k8s/deployment.yaml
         kubectl apply -f ~/k8s/service.yaml
 
-    - name: Restart deployment so pods pick up updated secret
+    # -----------------------------
+    # Step 5: Restart deployment so pods pick up updated secret
+    # -----------------------------
+    - name: Restart deployment
       kubernetes.core.k8s:
         kind: Deployment
         namespace: default
         name: incident-app
         state: restarted
+
+    # -----------------------------
+    # Optional: Wait for pods to be ready (recommended)
+    # -----------------------------
+    - name: Wait for deployment rollout to complete
+      shell: kubectl rollout status deployment/incident-app --timeout=120s
