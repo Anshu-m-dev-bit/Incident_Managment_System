@@ -2,16 +2,19 @@ from openai import OpenAI
 import os
 
 def get_ai_analysis(service, error, logs, impact, severity):
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("ZAI_API_KEY")  # changed env variable
 
-    # Debug (you can remove later)
-    print("DEBUG: OPENAI_API_KEY =", "FOUND" if api_key else "MISSING")
+    print("DEBUG: ZAI_API_KEY =", "FOUND" if api_key else "MISSING")
 
     if not api_key:
-        return "AI analysis is currently unavailable because OPENAI_API_KEY is not set."
+        return "AI analysis is currently unavailable because ZAI_API_KEY is not set."
 
     try:
-        client = OpenAI(api_key=api_key)
+        # 🔥 Change: base_url added for Z.ai
+        client = OpenAI(
+            api_key=api_key,
+            base_url="https://api.z.ai/v1"   # <-- important
+        )
 
         prompt = f"""
 You are an SRE assistant.
@@ -34,7 +37,7 @@ Provide:
 """
 
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="glm-4.5-air",   # 🔥 changed model
             messages=[
                 {"role": "user", "content": prompt}
             ],
