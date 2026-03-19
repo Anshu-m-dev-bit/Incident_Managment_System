@@ -130,3 +130,67 @@
         name: grafana-server
         enabled: yes
         state: started
+
+  # ---------------- ALERTMANAGER ----------------
+- name: Install Alertmanager
+  hosts: monitoring
+  become: yes
+
+  vars:
+    alertmanager_version: "0.27.0"
+
+  tasks:
+
+    - name: Download Alertmanager
+      get_url:
+        url: "https://github.com/prometheus/alertmanager/releases/download/v{{ alertmanager_version }}/alertmanager-{{ alertmanager_version }}.linux-amd64.tar.gz"
+        dest: /tmp/alertmanager.tar.gz
+
+    - name: Extract Alertmanager
+      unarchive:
+        src: /tmp/alertmanager.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: Move Alertmanager folder
+      command: mv /opt/alertmanager-{{ alertmanager_version }}.linux-amd64 /opt/alertmanager
+      args:
+        creates: /opt/alertmanager
+
+    - name: Create Alertmanager config
+      copy:
+        dest: /opt/alertmanager/alertmanager.yml
+        content: |
+          global:
+            smtp_smarthost: 'smtp.gmail.com:587'
+            smtp_from: 'your-email@gmail.com'
+            smtp_auth_username: 'your-email@gmail.com'
+            smtp_auth_password: 'YOUR_APP_PASSWORD'
+
+          route:
+            receiver: 'email-alert'
+
+          receivers:
+            - name: 'email-alert'
+              email_configs:
+                - to: 'your-email@gmail.com'
+
+    - name: Create systemd service for Alertmanager
+      copy:
+        dest: /etc/systemd/system/alertmanager.service
+        content: |
+          [Unit]
+          Description=Alertmanager
+          After=network.target
+
+          [Service]
+          ExecStart=/opt/alertmanager/alertmanager --config.file=/opt/alertmanager/alertmanager.yml
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start Alertmanager
+      systemd:
+        name: alertmanager
+        enabled: yes
+        state: started
