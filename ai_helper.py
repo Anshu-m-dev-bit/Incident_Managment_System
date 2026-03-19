@@ -1,20 +1,16 @@
-from openai import OpenAI
+import requests
 import os
 
 def get_ai_analysis(service, error, logs, impact, severity):
-    api_key = os.getenv("OPENAI_API_KEY")  # changed env variable
+    api_key = os.getenv("OPENROUTER_API_KEY")
 
-    print("DEBUG: OPENAI_API_KEY =", "FOUND" if api_key else "MISSING")
+    print("DEBUG: OPENROUTER_API_KEY =", "FOUND" if api_key else "MISSING")
 
     if not api_key:
-        return "AI analysis is currently unavailable because OPENAI_API_KEY is not set."
+        return "AI analysis unavailable: API key not set."
 
     try:
-        # 🔥 Change: base_url added for Z.ai
-        client = OpenAI(
-            api_key=api_key,
-            base_url="https://api.z.ai/v1"   # <-- important
-        )
+        url = "https://openrouter.ai/api/v1/chat/completions"
 
         prompt = f"""
 You are an SRE assistant.
@@ -28,7 +24,6 @@ Impact: {impact}
 Severity: {severity}
 
 Provide:
-
 1. Summary
 2. Root Causes
 3. Troubleshooting Steps
@@ -36,15 +31,35 @@ Provide:
 5. Preventive Measures
 """
 
-        response = client.chat.completions.create(
-            model="glm-4.5-air",   # 🔥 changed model
-            messages=[
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        data = {
+            "model": "meta-llama/llama-3-8b-instruct",
+            "messages": [
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.3
-        )
+            "temperature": 0.3
+        }
 
-        return response.choices[0].message.content
+        response = requests.post(url, headers=headers, json=data)
+
+        # 🔴 Important: handle bad responses safely
+        if response.status_code != 200:
+            print("ERROR STATUS:", response.status_code)
+            print("ERROR RESPONSE:", response.text)
+            return f"AI analysis failed (status {response.status_code})"
+
+        res_json = response.json()
+
+        # 🔴 Safe parsing (prevents crashes)
+        if "choices" not in res_json:
+            return "AI response format error."
+
+        return res_json["choices"][0]["message"]["content"]
 
     except Exception as e:
+        print("EXCEPTION:", str(e))
         return f"AI analysis failed: {str(e)}"
