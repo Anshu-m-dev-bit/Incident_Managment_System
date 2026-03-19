@@ -22,15 +22,15 @@ spec:
         env:
         - name: DB_HOST
           value: "database-1.c9isuqawg6tv.eu-north-1.rds.amazonaws.com"
-
         - name: DB_USER
           value: "admin"
-
         - name: DB_PASSWORD
           value: "Forgot247"
-
         - name: DB_NAME
           value: "pypro"
 
         - name: OPENROUTER_API_KEY
-          value: "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"
+          valueFrom:
+            secretKeyRef:
+              name: openrouter-secret
+              key: OPENROUTER_API_KEY

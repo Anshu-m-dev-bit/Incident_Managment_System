@@ -63,3 +63,11 @@ Provide:
     except Exception as e:
         print("EXCEPTION:", str(e))
         return f"AI analysis failed: {str(e)}"
+    
+# print(get_ai_analysis(
+#     "auth-service",
+#     "500 Internal Server Error",
+#     "NullPointerException at line 42",
+#     "Users unable to login",
+#     "High"
+# ))
