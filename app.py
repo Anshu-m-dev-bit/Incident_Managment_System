@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, Response
 from db_operations import (
     create_incident,
     list_incidents,
@@ -8,14 +8,28 @@ from db_operations import (
     update_severity,
     delete_incident
 )
-from prometheus_client import Counter, generate_latest
-from flask import Response
+from prometheus_client import Counter, generate_latest,  CollectorRegistry, CONTENT_TYPE_LATEST, multiprocess
+
+app = Flask(__name__)
+app.secret_key = "supersecretkey"  # Required for flash messages
 
 # Example metric
 REQUEST_COUNT = Counter('app_requests_total', 'Total number of requests')
 
-app = Flask(__name__)
-app.secret_key = "supersecretkey"  # Required for flash messages
+def get_registry():
+    registry = CollectorRegistry()
+    multiprocess.MultiProcessCollector(registry)
+    return registry
+
+@app.before_request
+def before_request():
+    REQUEST_COUNT.inc()
+
+@app.route('/metrics')
+def metrics():
+    registry = get_registry()
+    return Response(generate_latest(registry), mimetype=CONTENT_TYPE_LATEST)
+
 
 
 # -------------------------
@@ -173,16 +187,6 @@ def list_all():
     incidents = list_incidents()
     return render_template('list.html', incidents=incidents)
 
-
-
-@app.route('/metrics')
-def home():
-    REQUEST_COUNT.inc()
-    return "Hello World"
-
-@app.route('/metrics')
-def metrics():
-    return Response(generate_latest(), mimetype='text/plain')
 
 # -------------------------
 # RUN APP
