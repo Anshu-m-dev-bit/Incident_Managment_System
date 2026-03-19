@@ -8,7 +8,7 @@ from db_operations import (
     update_severity,
     delete_incident
 )
-from prometheus_client import Counter, generate_latest,  CollectorRegistry, CONTENT_TYPE_LATEST, multiprocess
+from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # Required for flash messages
@@ -16,19 +16,14 @@ app.secret_key = "supersecretkey"  # Required for flash messages
 # Example metric
 REQUEST_COUNT = Counter('app_requests_total', 'Total number of requests')
 
-def get_registry():
-    registry = CollectorRegistry()
-    multiprocess.MultiProcessCollector(registry)
-    return registry
 
 @app.before_request
 def before_request():
     REQUEST_COUNT.inc()
 
-@app.route('/metrics')
+@app.route('/metrics', methods=['GET', 'POST'])
 def metrics():
-    registry = get_registry()
-    return Response(generate_latest(registry), mimetype=CONTENT_TYPE_LATEST)
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 
