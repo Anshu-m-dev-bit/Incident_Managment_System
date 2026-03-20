@@ -63,7 +63,7 @@ def create_page():
 
     if not all([service, severity, description, status]):
         flash("All fields are required")
-        return redirect(url_for('create_page'))
+        return redirect(url_for('create'))
 
     if request.method == 'POST':
         service = request.form.get('service')
