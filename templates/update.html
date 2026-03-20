@@ -4,6 +4,9 @@
 
 <div class="container mt-4">
 
+<div class="row-flex">
+
+<!-- LEFT: UPDATE CARD -->
 <div class="update-card">
 
 <h2>Update Incident #{{ incident.id }}</h2>
@@ -11,111 +14,139 @@
 <form method="POST">
 
 <div class="form-group">
-
 <label>Service</label>
-
-<input 
-type="text" 
-name="service" 
-value="{{ incident.service }}" 
-required
->
-
+<input type="text" name="service" value="{{ incident.service }}" required>
 </div>
 
-
 <div class="form-group">
-
 <label>Severity</label>
-
-<select name="severity" id="severity">
-
+<select name="severity">
 <option value="SEV1" {% if incident.severity=="SEV1" %}selected{% endif %}>SEV1</option>
 <option value="SEV2" {% if incident.severity=="SEV2" %}selected{% endif %}>SEV2</option>
 <option value="SEV3" {% if incident.severity=="SEV3" %}selected{% endif %}>SEV3</option>
-
 </select>
-
 </div>
 
-
 <div class="form-group">
-
 <label>Status</label>
-
-<select name="status" id="status">
-
+<select name="status">
 <option value="Open" {% if incident.status=="Open" %}selected{% endif %}>Open</option>
 <option value="Investigating" {% if incident.status=="Investigating" %}selected{% endif %}>Investigating</option>
 <option value="Mitigated" {% if incident.status=="Mitigated" %}selected{% endif %}>Mitigated</option>
 <option value="Resolved" {% if incident.status=="Resolved" %}selected{% endif %}>Resolved</option>
-
 </select>
-
 </div>
-
 
 <div class="form-group">
-
 <label>Description</label>
-
-<textarea 
-name="description" 
-rows="4"
->{{ incident.description }}</textarea>
-
+<textarea name="description" rows="4">{{ incident.description }}</textarea>
 </div>
-
 
 <div class="button-row">
+<button type="submit" class="update-btn">Update Incident</button>
 
-<button type="submit" class="update-btn">
-Update Incident
-</button>
-
-<button 
-type="button"
-class="delete-btn"
-onclick="confirmDelete()"
->
+<button type="button" class="delete-btn" onclick="confirmDelete()">
 Delete
 </button>
-
 </div>
 
+</form>
+</div>
+
+
+<!-- RIGHT: AI ANALYSIS CARD -->
+<div class="ai-card">
+
+<div class="ai-header">
+<h2>AI Analysis</h2>
+
+<form method="POST" action="{{ url_for('regenerate_ai', iid=incident.id) }}">
+<button type="submit" class="regen-btn" title="Regenerate AI">
+🔄
+</button>
 </form>
 
 </div>
 
+<div class="ai-body">
+<pre>
+{{ incident.ai_analysis if incident.ai_analysis else "No AI analysis available" }}
+</pre>
 </div>
 
+</div>
+
+</div> <!-- flex end -->
+
+</div>
 
 <style>
 
-/* card */
+/* FLEX LAYOUT */
 
-.update-card{
-
-max-width:600px;
-
-margin:auto;
-
-background:white;
-
-padding:30px;
-
-border-radius:12px;
-
-box-shadow:0 6px 18px rgba(0,0,0,0.1);
-
+.row-flex{
+display:flex;
+gap:20px;
+align-items:stretch;
+flex-wrap:wrap;
 }
 
-.update-card h2{
+/* BOTH CARDS SAME SIZE */
+
+.update-card, .ai-card{
+flex:1;
+min-width:350px;
+background:white;
+padding:30px;
+border-radius:12px;
+box-shadow:0 6px 18px rgba(0,0,0,0.1);
+}
+
+/* HEADERS */
+
+.update-card h2,
+.ai-card h2{
 margin-bottom:20px;
 }
 
+/* AI HEADER */
 
-/* form */
+.ai-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+/* AI BODY */
+
+.ai-body{
+margin-top:10px;
+max-height:400px;
+overflow-y:auto;
+}
+
+.ai-body pre{
+white-space:pre-wrap;
+font-size:14px;
+line-height:1.5;
+}
+
+/* REGENERATE BUTTON */
+
+.regen-btn{
+background:#f1c40f;
+border:none;
+padding:6px 10px;
+border-radius:6px;
+cursor:pointer;
+font-size:14px;
+}
+
+.regen-btn:hover{
+background:#d4ac0d;
+}
+
+/* FORM */
 
 .form-group{
 margin-bottom:18px;
@@ -130,21 +161,14 @@ margin-bottom:6px;
 .form-group input,
 .form-group select,
 .form-group textarea{
-
 width:100%;
-
 padding:10px;
-
 border-radius:6px;
-
 border:1px solid #ccc;
-
 font-size:14px;
-
 }
 
-
-/* buttons */
+/* BUTTONS */
 
 .button-row{
 display:flex;
@@ -153,40 +177,25 @@ margin-top:20px;
 }
 
 .update-btn{
-
 background:#3498db;
-
 color:white;
-
 border:none;
-
 padding:10px 16px;
-
 border-radius:6px;
-
 cursor:pointer;
-
 }
 
 .update-btn:hover{
 background:#2980b9;
 }
 
-
 .delete-btn{
-
 background:#e74c3c;
-
 color:white;
-
 border:none;
-
 padding:10px 16px;
-
 border-radius:6px;
-
 cursor:pointer;
-
 }
 
 .delete-btn:hover{
@@ -195,17 +204,12 @@ background:#c0392b;
 
 </style>
 
-
 <script>
 
 function confirmDelete(){
-
 if(confirm("Are you sure you want to delete this incident?")){
-
 window.location.href="/delete/{{ incident.id }}"
-
 }
-
 }
 
 </script>

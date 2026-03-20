@@ -116,7 +116,8 @@ def list_incidents(status=None, severity=None):
                    severity,
                    description,
                    status,
-                   created_at
+                   created_at,
+                   ai_analysis
             FROM incidents_p
             WHERE 1=1
         """
@@ -155,11 +156,12 @@ def get_incident_by_id(incident_id):
 
         query = """
             SELECT incident_code AS id,
-                   service,
-                   severity,
-                   description,
-                   status,
-                   created_at
+                service,
+                severity,
+                description,
+                status,
+                created_at,
+                ai_analysis  
             FROM incidents_p
             WHERE incident_code = %s
         """
@@ -464,3 +466,61 @@ def get_incident_trend():
 
     return results
 
+def regenerate_ai_analysis(incident_id):
+
+    conn = None
+    cursor = None
+
+    try:
+        # -------- STEP 1: Get incident data --------
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT service, description, severity
+            FROM incidents_p
+            WHERE incident_code = %s
+        """, (incident_id,))
+
+        incident = cursor.fetchone()
+
+        if not incident:
+            return False, "Incident not found"
+
+        # ✅ Close DB BEFORE AI call (very important)
+        cursor.close()
+        conn.close()
+
+        # -------- STEP 2: Call AI (no DB lock) --------
+        new_ai = get_ai_analysis(
+            service=incident["service"],
+            error=incident["description"],
+            logs=incident["description"],
+            impact="Not specified",
+            severity=incident["severity"]
+        )
+
+        # -------- STEP 3: Update DB --------
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE incidents_p
+            SET ai_analysis = %s
+            WHERE incident_code = %s
+        """, (new_ai, incident_id))
+
+        conn.commit()
+
+        return True, new_ai   # return AI also (useful)
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return False, str(e)
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()

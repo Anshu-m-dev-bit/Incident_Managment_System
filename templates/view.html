@@ -100,15 +100,19 @@ data-status="{{ inc.status }}">
 
 <div class="incident-left">
 
-<h4>Incident #{{ inc.id }}</h4>
-
-<div class="meta">
-
-<span>Service: {{ inc.service }}</span>
-
-<span>Created: {{ inc.created_at }}</span>
-
-</div>
+    <h4>Incident #{{ inc.id }}</h4>
+    
+    <div class="meta">
+    <span>Service: {{ inc.service }}</span>
+    <span>Created: {{ inc.created_at }}</span>
+    </div>
+    
+    <!-- ✅ AI PREVIEW -->
+    <div class="ai-preview">
+    {{ inc.ai_analysis[:120] if inc.ai_analysis else "No AI analysis available" }}...
+    </div>
+    
+    </div>
 
 </div>
 
@@ -361,6 +365,26 @@ color:white;
 padding:8px 14px;
 border-radius:6px;
 text-decoration:none;
+}
+
+/* AI PREVIEW */
+
+.ai-preview{
+margin-top:10px;
+font-size:13px;
+color:#555;
+line-height:1.4;
+
+/* limit to 2 lines */
+display:-webkit-box;
+-webkit-line-clamp:2;
+-webkit-box-orient:vertical;
+overflow:hidden;
+}
+
+.ai-preview{
+border-left:3px solid #3498db;
+padding-left:8px;
 }
 
 </style>

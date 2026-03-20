@@ -11,7 +11,8 @@ from db_operations import (
     get_status_stats,
     get_recent_incidents,
     get_open_closed_stats,
-    get_incident_trend
+    get_incident_trend,
+    regenerate_ai_analysis
 )
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 
@@ -61,16 +62,15 @@ def dashboard():
 @app.route('/create', methods=['GET', 'POST'])
 def create_page():
 
-    if not all([service, severity, description, status]):
-        flash("All fields are required")
-        return redirect(url_for('create'))
-
     if request.method == 'POST':
         service = request.form.get('service')
         severity = request.form.get('severity')
         description = request.form.get('description')
         status = request.form.get('status')
 
+        if not all([service, severity, description, status]):
+            flash("All fields are required")
+            return redirect(url_for('create_page'))
         try:
             create_incident(service, severity, description, status)
             flash("Incident created successfully.")
@@ -200,6 +200,19 @@ def delete(iid):
     flash("Incident deleted successfully")
 
     return redirect(url_for('view_all'))
+
+
+@app.route('/regenerate_ai/<iid>', methods=['POST'])
+def regenerate_ai(iid):
+
+    success, result = regenerate_ai_analysis(iid)
+
+    if success:
+        flash("AI analysis regenerated successfully")
+    else:
+        flash(f"Error: {result}")
+
+    return redirect(url_for('update_page', iid=iid))
 
 
 # -------------------------
