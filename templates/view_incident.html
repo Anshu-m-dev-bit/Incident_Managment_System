@@ -2,61 +2,57 @@
 
 {% block content %}
 
-<div class="container">
+<div class="container mt-4">
 
-<div class="incident-view-card">
+<div class="row-flex">
 
-<h2>Incident Details</h2>
+<!-- LEFT: INCIDENT DETAILS -->
+<div class="update-card">
 
-<div class="detail-row">
-<span class="label">Incident ID</span>
-<span class="value">{{ incident.id }}</span>
-</div>
+<h2>Incident #{{ incident.id }}</h2>
 
 <div class="detail-row">
-<span class="label">Service</span>
-<span class="value">{{ incident.service }}</span>
+<label>Service</label>
+<p>{{ incident.service }}</p>
 </div>
 
 <div class="detail-row">
-<span class="label">Status</span>
-<span class="value status {{ incident.status|lower }}">
-{{ incident.status }}
-</span>
+<label>Severity</label>
+<p class="severity {{ incident.severity }}">{{ incident.severity }}</p>
 </div>
 
 <div class="detail-row">
-<span class="label">Severity</span>
-<span class="value severity {{ incident.severity|lower }}">
-{{ incident.severity }}
-</span>
+<label>Status</label>
+<p class="status {{ incident.status }}">{{ incident.status }}</p>
 </div>
 
 <div class="detail-row">
-<span class="label">Created At</span>
-<span class="value">{{ incident.created_at }}</span>
+<label>Description</label>
+<p>{{ incident.description }}</p>
 </div>
 
-<div class="description-box">
-
-<h3>Description</h3>
-
-<p>
-{{ incident.description }}
-</p>
+<div class="detail-row">
+<label>Created At</label>
+<p>{{ incident.created_at }}</p>
+</div>
 
 </div>
 
 
-<div class="ai-box">
+<!-- RIGHT: AI ANALYSIS -->
+<div class="ai-card">
 
-    <h3>AI Analysis</h3>
-    
-    <pre>
-    {{ incident.ai_analysis if incident.ai_analysis else "No AI analysis available" }}
-    </pre>
-    
-    </div>
+<div class="ai-header">
+<h2>AI Analysis</h2>
+</div>
+
+<div class="ai-body">
+<pre>
+{{ incident.ai_analysis if incident.ai_analysis else "No AI analysis available" }}
+</pre>
+</div>
+
+</div>
 
 </div>
 
@@ -64,143 +60,73 @@
 
 <style>
 
-.container{
+/* SAME FLEX LAYOUT AS UPDATE */
 
+.row-flex{
 display:flex;
-justify-content:center;
-margin-top:40px;
-
+gap:20px;
+align-items:stretch;
+flex-wrap:wrap;
 }
 
-/* main card */
+/* SAME CARD STYLE */
 
-.incident-view-card{
-
-width:700px;
-
+.update-card, .ai-card{
+flex:1;
+min-width:350px;
 background:white;
-
 padding:30px;
-
 border-radius:12px;
-
-box-shadow:0 8px 20px rgba(0,0,0,0.1);
-
+box-shadow:0 6px 18px rgba(0,0,0,0.1);
 }
 
-.incident-view-card h2{
+/* HEADINGS */
 
-margin-bottom:25px;
-
+.update-card h2,
+.ai-card h2{
+margin-bottom:20px;
 }
 
-/* detail rows */
+/* DETAIL SECTIONS */
 
 .detail-row{
-
-display:flex;
-
-justify-content:space-between;
-
-padding:12px 0;
-
-border-bottom:1px solid #eee;
-
+margin-bottom:18px;
 }
 
-.label{
-
+.detail-row label{
+display:block;
 font-weight:600;
-
-color:#444;
-
+margin-bottom:6px;
 }
 
-.value{
-
-font-weight:500;
-
-}
-
-/* description */
-
-.description-box{
-
-margin-top:25px;
-
-}
-
-.description-box h3{
-
-margin-bottom:10px;
-
-}
-
-.description-box p{
-
-background:#f7f7f7;
-
-padding:15px;
-
-border-radius:8px;
-
-line-height:1.6;
-
-}
-
-/* severity colors */
-
-.sev1{
-color:#e74c3c;
-font-weight:bold;
-}
-
-.sev2{
-color:#e67e22;
-font-weight:bold;
-}
-
-.sev3{
-color:#3498db;
-font-weight:bold;
-}
-
-/* status */
-
-.status.open{
-color:#e74c3c;
-}
-
-.status.investigating{
-color:#f39c12;
-}
-
-.status.mitigated{
-color:#2980b9;
-}
-
-.status.resolved{
-color:#27ae60;
-}
-
-/* AI Analysis */
-
-.ai-box{
-margin-top:25px;
-}
-
-.ai-box h3{
-margin-bottom:10px;
-}
-
-.ai-box pre{
-background:#f4f6f7;
-padding:15px;
-border-radius:8px;
-line-height:1.6;
-white-space:pre-wrap;
+.detail-row p{
+margin:0;
 font-size:14px;
 }
+
+/* AI */
+
+.ai-body{
+max-height:400px;
+overflow-y:auto;
+}
+
+.ai-body pre{
+white-space:pre-wrap;
+font-size:14px;
+line-height:1.5;
+}
+
+/* BADGES (same as before) */
+
+.severity.SEV1{color:#e74c3c;font-weight:bold;}
+.severity.SEV2{color:#f39c12;font-weight:bold;}
+.severity.SEV3{color:#3498db;font-weight:bold;}
+
+.status.Open{color:#e74c3c;}
+.status.Investigating{color:#f39c12;}
+.status.Mitigated{color:#2980b9;}
+.status.Resolved{color:#27ae60;}
 
 </style>
 
