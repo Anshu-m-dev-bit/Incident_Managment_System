@@ -3,10 +3,15 @@ from db_operations import (
     create_incident,
     list_incidents,
     get_incident_by_id,
-    update_status,
-    update_description,
-    update_severity,
-    delete_incident
+    update_incident,
+    delete_incident,
+    get_total_count,
+    get_active_sev1_count,
+    get_severity_stats,
+    get_status_stats,
+    get_recent_incidents,
+    get_open_closed_stats,
+    get_incident_trend
 )
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 
@@ -30,148 +35,171 @@ def metrics():
 # -------------------------
 # HOME
 # -------------------------
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        operation = request.form.get('operation')
+@app.route('/')
+def dashboard():
 
-        if operation == 'create':
-            return redirect(url_for('create_page'))
+    total = get_total_count()
+    active_sev1 = get_active_sev1_count()
+    severity_stats = get_severity_stats()
+    status_stats = get_status_stats()
+    recents = get_recent_incidents()
+    open_closed = get_open_closed_stats()
+    trend = get_incident_trend()
 
-        elif operation in ['view', 'update', 'delete']:
-            return redirect(url_for('search', operation=operation))
-
-        else:
-            return "Invalid Option", 400
-
-    return render_template('index.html')
-
-
+    return render_template(
+        'dashboard.html',
+        total=total,
+        active_sev1=active_sev1,
+        severity_stats=severity_stats,
+        open_closed=open_closed,
+        trend=trend,
+        recents=recents
+    )
 # -------------------------
 # CREATE
 # -------------------------
 @app.route('/create', methods=['GET', 'POST'])
 def create_page():
+
+    if not all([service, severity, description, status]):
+        flash("All fields are required")
+        return redirect(url_for('create_page'))
+
     if request.method == 'POST':
         service = request.form.get('service')
         severity = request.form.get('severity')
         description = request.form.get('description')
         status = request.form.get('status')
 
-        # ✅ Basic validation (prevents weird DB errors)
-        if not all([service, severity, description, status]):
-            return "All fields are required", 400
-
         try:
             create_incident(service, severity, description, status)
             flash("Incident created successfully.")
-            return redirect(url_for('index'))
+            return redirect(url_for('dashboard'))
 
         except Exception as e:
-            # ✅ Better logging
-            print("CREATE ERROR:", str(e))
             return f"Error creating incident: {str(e)}", 500
 
-    return render_template('create.html')
+
+    # -------- Get current incident data --------
+    incidents = list_incidents()
+
+    sev_counts = {
+        "SEV1": 0,
+        "SEV2": 0,
+        "SEV3": 0
+    }
+
+    stat_counts = {
+        "Open": 0,
+        "Investigating": 0,
+        "Mitigated": 0,
+        "Resolved": 0
+    }
+
+    for inc in incidents:
+        sev_counts[inc["severity"]] += 1
+        stat_counts[inc["status"]] += 1
+
+
+    return render_template(
+        'create.html',
+        sev_counts=sev_counts,
+        stat_counts=stat_counts
+    )
+
 
 
 # -------------------------
 # SEARCH (for view/update/delete)
 # -------------------------
-@app.route('/search/<operation>', methods=['GET', 'POST'])
-def search(operation):
+@app.route('/search')
+def search():
 
-    if operation not in ['view', 'update', 'delete']:
-        return "Invalid operation", 400
+    # Get incidents using your db_operations function
+    incidents = list_incidents()
 
-    if request.method == 'POST':
-        iid = request.form.get('iid')
+    sev_counts = {
+        "SEV1": 0,
+        "SEV2": 0,
+        "SEV3": 0
+    }
 
-        if not iid:
-            return "Incident ID is required", 400
+    stat_counts = {
+        "Open": 0,
+        "Investigating": 0,
+        "Mitigated": 0,
+        "Resolved": 0
+    }
 
-        return redirect(url_for(operation, iid=iid))
+    for inc in incidents:
+        sev_counts[inc["severity"]] += 1
+        stat_counts[inc["status"]] += 1
 
-    return render_template('search.html', operation=operation)
-
+    return render_template(
+        "search.html",
+        sev_counts=sev_counts,
+        stat_counts=stat_counts
+    )
 
 # -------------------------
 # VIEW
 # -------------------------
+# View all incidents
+@app.route('/view')
+def view_all():
+
+    incidents = list_incidents()
+
+    return render_template('view.html', incidents=incidents)
+
+
+# View single incident
 @app.route('/view/<iid>')
-def view(iid):
+def view_incident(iid):
 
     incident = get_incident_by_id(iid)
 
     if not incident:
         return "Incident not found", 404
 
-    return render_template('view.html', incident=incident)
+    return render_template('view_incident.html', incident=incident)
 
 
 # -------------------------
 # UPDATE
 # -------------------------
-@app.route('/update/<iid>', methods=['GET', 'POST'])
-def update(iid):
+@app.route('/update/<iid>', methods=['GET','POST'])
+def update_page(iid):
+
+    if request.method == 'POST':
+
+        service = request.form.get('service')
+        severity = request.form.get('severity')
+        description = request.form.get('description')
+        status = request.form.get('status')
+
+        update_incident(iid, service, severity, description, status)
+
+        flash("Incident updated successfully")
+
+        return redirect(url_for('view_incident', iid=iid))
 
     incident = get_incident_by_id(iid)
 
-    if not incident:
-        return "Incident not found", 404
-
-    if request.method == 'POST':
-        field = request.form.get('field')
-        value = request.form.get('value')
-
-        if not field or not value:
-            return "Field and value are required", 400
-
-        if field == 'status':
-            ok, msg = update_status(iid, value)
-            if not ok:
-                return f"Update Failed: {msg}"
-
-        elif field == 'description':
-            success = update_description(iid, value)
-            if not success:
-                return "Update Failed"
-
-        elif field == 'severity':
-            success = update_severity(iid, value)
-            if not success:
-                return "Update Failed"
-
-        else:
-            return "Invalid field", 400
-
-        flash("Incident updated successfully.")
-        return redirect(url_for('index'))
-
-    return render_template('update.html', incident=incident)
+    return render_template("update.html", incident=incident)
 
 
 # -------------------------
 # DELETE
 # -------------------------
-@app.route('/delete/<iid>', methods=['GET', 'POST'])
+@app.route('/delete/<iid>')
 def delete(iid):
 
-    incident = get_incident_by_id(iid)
+    delete_incident(iid)
 
-    if not incident:
-        return "Incident not found", 404
+    flash("Incident deleted successfully")
 
-    if request.method == 'POST':
-        ok, msg = delete_incident(iid)
-
-        if not ok:
-            return f"Delete Failed: {msg}"
-
-        flash("Incident deleted successfully.")
-        return redirect(url_for('index'))
-
-    return render_template('delete.html', incident=incident)
+    return redirect(url_for('view_all'))
 
 
 # -------------------------
@@ -179,6 +207,12 @@ def delete(iid):
 # -------------------------
 @app.route('/list')
 def list_all():
+    incidents = list_incidents()
+    return render_template('list.html', incidents=incidents)
+
+
+@app.route('/incidents')
+def list_incidents_route():
     incidents = list_incidents()
     return render_template('list.html', incidents=incidents)
 

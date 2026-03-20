@@ -1,30 +1,197 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+<div class="row">
+
+<!-- LEFT SIDE FORM -->
+<div class="col-md-6">
+
+<div class="card shadow-sm p-4">
+
+<h4 class="mb-3">Create Incident</h4>
+
 <form method="POST">
 
-    <label>Service:</label>
-    <input type="text" name="service" required>
-    <br><br>
+<div class="mb-3">
+<label class="form-label">Service</label>
+<input type="text" name="service" class="form-control" required>
+</div>
 
-    <label>Severity:</label>
-    <select name="severity" required>
-        <option value="SEV1">SEV1</option>
-        <option value="SEV2">SEV2</option>
-        <option value="SEV3">SEV3</option>
-    </select>
-    <br><br>
+<div class="mb-3">
+<label class="form-label">Severity</label>
+<select name="severity" class="form-control" id="severity">
+<option value="SEV1">SEV1</option>
+<option value="SEV2">SEV2</option>
+<option value="SEV3">SEV3</option>
+</select>
+</div>
 
-    <label>Description:</label>
-    <input type="text" name="description" required>
-    <br><br>
+<div class="mb-3">
+<label class="form-label">Status</label>
+<select name="status" class="form-control" id="status">
+<option value="Open">Open</option>
+<option value="Investigating">Investigating</option>
+<option value="Mitigated">Mitigated</option>
+<option value="Resolved">Resolved</option>
+</select>
+</div>
 
-    <label>Status:</label>
-    <select name="status" required>
-        <option value="Open">Open</option>
-        <option value="Investigating">Investigating</option>
-        <option value="Mitigated">Mitigated</option>
-        <option value="Resolved">Resolved</option>
-    </select>
-    <br><br>
+<div class="mb-3">
+<label class="form-label">Description</label>
+<textarea name="description" class="form-control" rows="3"></textarea>
+</div>
 
-    <button type="submit">Create Incident</button>
+<button class="btn btn-primary w-100">Create Incident</button>
 
 </form>
+
+</div>
+
+</div>
+
+
+<!-- RIGHT SIDE CHARTS -->
+<div class="col-md-6">
+
+<div class="card shadow-sm p-4 mb-4">
+
+<h5 class="mb-3">Severity Preview</h5>
+
+<div style="height:220px">
+<canvas id="severityChart"></canvas>
+</div>
+
+</div>
+
+
+<div class="card shadow-sm p-4">
+
+<h5 class="mb-3">Status Preview</h5>
+
+<div style="height:220px">
+<canvas id="statusChart"></canvas>
+</div>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+    let severityChart;
+    let statusChart;
+    
+    /* DB DATA coming from Flask */
+    
+    let baseSeverity = {{ sev_counts | tojson }};
+    let baseStatus = {{ stat_counts | tojson }};
+    
+    
+    function updateCharts(){
+    
+    const severity = document.getElementById("severity").value;
+    const status = document.getElementById("status").value;
+    
+    
+    /* Clone DB stats */
+    
+    let sevData = {...baseSeverity};
+    let statData = {...baseStatus};
+    
+    
+    /* Simulate new incident */
+    
+    if(sevData[severity] !== undefined){
+        sevData[severity] += 1;
+    }
+    
+    if(statData[status] !== undefined){
+        statData[status] += 1;
+    }
+    
+    
+    /* Severity Donut Chart */
+    
+    const sevDataset = {
+    labels:["SEV1","SEV2","SEV3"],
+    datasets:[{
+    data:[
+    sevData.SEV1,
+    sevData.SEV2,
+    sevData.SEV3
+    ]
+    }]
+    };
+    
+    
+    if(severityChart){
+    severityChart.data = sevDataset;
+    severityChart.update();
+    }else{
+    
+    severityChart = new Chart(
+    document.getElementById("severityChart"),
+    {
+    type:"doughnut",
+    data:sevDataset,
+    options:{maintainAspectRatio:false}
+    }
+    );
+    
+    }
+    
+    
+    /* Status Bar Chart */
+    
+    const statDataset = {
+    labels:["Open","Investigating","Mitigated","Resolved"],
+    datasets:[{
+    label:"Status",
+    data:[
+    statData.Open,
+    statData.Investigating,
+    statData.Mitigated,
+    statData.Resolved
+    ]
+    }]
+    };
+    
+    
+    if(statusChart){
+    statusChart.data = statDataset;
+    statusChart.update();
+    }else{
+    
+    statusChart = new Chart(
+    document.getElementById("statusChart"),
+    {
+    type:"bar",
+    data:statDataset,
+    options:{
+    maintainAspectRatio:false,
+    scales:{y:{beginAtZero:true}}
+    }
+    }
+    );
+    
+    }
+    
+    }
+    
+    document.getElementById("severity").addEventListener("change",updateCharts);
+    document.getElementById("status").addEventListener("change",updateCharts);
+    
+    updateCharts();
+    
+    </script>
+
+{% endblock %}

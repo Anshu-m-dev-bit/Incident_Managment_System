@@ -1,0 +1,121 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_TAG = "build-${BUILD_NUMBER}"
+        IMAGE_NAME = "anshumdev/incident-management-system"
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/Anshu-m-dev-bit/Incident_Managment_System.git'
+            }
+        }
+
+        stage('DockerHub Login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    '''
+                }
+            }
+        }
+
+        stage('Build and Push Image') {
+            steps {
+                sh '''
+                echo "Building Docker image..."
+                docker buildx build --no-cache \
+                --platform linux/amd64 \
+                -t $IMAGE_NAME:latest \
+                -t $IMAGE_NAME:$IMAGE_TAG \
+                --push .
+                '''
+            }
+        }
+
+        
+        stage('Create OpenRouter Secret') {
+            steps {
+                withCredentials([string(
+                    credentialsId: 'openrouter-api-key',
+                    variable: 'OPENROUTER_API_KEY'
+                )]) {
+                    sshagent(credentials: ['ec2-key']) {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no ec2-user@16.171.21.86 '
+                        kubectl delete secret openrouter-secret --ignore-not-found &&
+                        kubectl create secret generic openrouter-secret \
+                        --from-literal=OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+                        '
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Application via Ansible') {
+            steps {
+                sshagent(credentials: ['ec2-key']) {
+                    sh '''
+                    echo "Deploying application..."
+                    /bin/ansible-playbook -i ansible-setup/inventory/hosts.ini \
+                    ansible-setup/playbooks/deploy-app.yml \
+                    --ssh-extra-args='-o StrictHostKeyChecking=no'
+                    '''
+                }
+            }
+        }
+
+        stage('Restart Kubernetes Deployment') {
+            steps {
+                sshagent(credentials: ['ec2-key']) {
+                    sh '''
+                    kubectl rollout restart deployment incident-app || true
+                    '''
+                }
+            }
+        }
+
+        stage('Setup Monitoring (Prometheus + Grafana)') {
+            steps {
+                sshagent(credentials: ['ec2-key']) {
+                    sh '''
+                    echo "Setting up monitoring..."
+                    /bin/ansible-playbook -i ansible-setup/inventory/hosts.ini \
+                    ansible-setup/playbooks/monitoring.yml \
+                    --ssh-extra-args='-o StrictHostKeyChecking=no'
+                    '''
+                }
+            }
+        }
+
+        stage('Verify Metrics Endpoint') {
+            steps {
+                sshagent(credentials: ['ec2-key']) {
+                    sh '''
+                    echo "Checking metrics endpoint..."
+                    curl -f http://172.31.38.35:30007/metrics || echo "Metrics endpoint not ready yet"
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Deployment successful!"
+        }
+        failure {
+            echo "❌ Pipeline failed."
+        }
+    }
+}

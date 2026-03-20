@@ -58,7 +58,6 @@ def create_incident(service, severity, description, status):
             severity=severity
         )
 
-        # ✅ FIXED: added one more %s
         query = """
             INSERT INTO incidents_p
             (incident_code, service, severity, description, status, created_at, ai_analysis)
@@ -174,6 +173,35 @@ def get_incident_by_id(incident_id):
         if conn:
             conn.close()
 
+# -------------------------
+# UPDATE
+# -------------------------
+def update_incident(incident_id, service, severity, description, status):
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        query = """
+            UPDATE incidents_p
+            SET service = %s,
+                severity = %s,
+                description = %s,
+                status = %s
+            WHERE incident_code = %s
+        """
+
+        cursor.execute(query, (service, severity, description, status, incident_id))
+        conn.commit()
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 # -------------------------
 # UPDATE STATUS
@@ -275,30 +303,164 @@ def delete_incident(incident_id):
 
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor()
 
-        cursor.execute(
-            "SELECT status FROM incidents_p WHERE incident_code = %s",
-            (incident_id,)
-        )
-        result = cursor.fetchone()
+        query = """
+            DELETE FROM incidents_p
+            WHERE incident_code = %s
+        """
 
-        if not result:
-            return False, "Not found"
-
-        if result["status"] != "Resolved":
-            return False, "Can only delete incidents with status 'Resolved'"
-
-        cursor.execute(
-            "DELETE FROM incidents_p WHERE incident_code = %s",
-            (incident_id,)
-        )
+        cursor.execute(query, (incident_id,))
         conn.commit()
-
-        return True, "Deleted"
 
     finally:
         if cursor:
             cursor.close()
         if conn:
             conn.close()
+
+# -------------------------
+# DASHBOARD FUNCTIONS
+# -------------------------
+
+def get_total_count():
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM incidents_p")
+    result = cursor.fetchone()[0]
+
+    cursor.close()
+    conn.close()
+
+    return result
+
+
+def get_active_sev1_count():
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM incidents_p
+        WHERE severity='SEV1' AND status!='Resolved'
+    """)
+
+    result = cursor.fetchone()[0]
+
+    cursor.close()
+    conn.close()
+
+    return result
+
+
+def get_severity_stats():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT severity, COUNT(*) as count
+        FROM incidents_p
+        GROUP BY severity
+    """)
+
+    result = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return result
+
+
+def get_status_stats():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT status, COUNT(*) as count
+        FROM incidents_p
+        GROUP BY status
+    """)
+
+    result = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return result
+
+
+def get_recent_incidents(limit=5):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT incident_code AS id,
+               service,
+               severity,
+               description,
+               status,
+               created_at
+        FROM incidents_p
+        ORDER BY created_at DESC
+        LIMIT %s
+    """, (limit,))
+
+    result = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return result
+
+
+def get_open_closed_stats():
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT 
+            SUM(CASE WHEN status='Open' THEN 1 ELSE 0 END),
+            SUM(CASE WHEN status='Resolved' THEN 1 ELSE 0 END)
+        FROM incidents_p
+    """)
+
+    result = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return {
+        "Open": result[0] or 0,
+        "Closed": result[1] or 0
+    }
+
+
+def get_incident_trend():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT DATE(created_at) as date, COUNT(*) as count
+        FROM incidents_p
+        GROUP BY DATE(created_at)
+        ORDER BY DATE(created_at)
+    """)
+
+    results = cursor.fetchall()
+
+    for row in results:
+        row['date'] = row['date'].strftime('%Y-%m-%d')
+
+    cursor.close()
+    conn.close()
+
+    return results
+

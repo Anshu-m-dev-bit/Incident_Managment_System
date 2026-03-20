@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- ===================== -->
+    <!-- Page Header -->
+    <!-- ===================== -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Incident Dashboard</h2>
+            <p class="text-muted mb-0">Operational overview of all incidents</p>
+        </div>
+        <a href="{{ url_for('search') }}" class="btn btn-dark">
+            Search Incidents
+        </a>
+    </div>
+
+
+    <!-- ===================== -->
+    <!-- Summary Cards -->
+    <!-- ===================== -->
+    <div class="row g-4 mb-5">
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-1">Total Incidents</p>
+                    <h3 class="fw-bold">{{ total }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-1">Open Incidents</p>
+                    <h3 class="fw-bold text-danger">{{ active_sev1 }}</h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- ===================== -->
+    <!-- Charts Section -->
+    <!-- ===================== -->
+    <div class="row g-4 mb-5">
+
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="fw-semibold mb-3">Incidents by Severity</h5>
+                    <div style="max-width: 280px; margin: auto;">
+                        <canvas id="severityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="fw-semibold mb-3">Incidents by Status</h5>
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card shadow-sm border-0 mb-5">
+        <div class="card-body">
+            <h5 class="fw-semibold mb-3">Incident Trend</h5>
+            <div style="height: 260px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ===================== -->
+    <!-- Recent Incidents -->
+    <!-- ===================== -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <h5 class="fw-semibold mb-3">Recent Incidents</h5>
+
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Service</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for incident in recents %}
+                        <tr>
+                            <td>{{ incident.id }}</td>
+                            <td>{{ incident.service }}</td>
+                            <td>
+                                {% if incident.severity == 'SEV1' %}
+                                    <span class="badge bg-danger">{{ incident.severity }}</span>
+                                {% elif incident.severity == 'SEV2' %}
+                                    <span class="badge bg-warning text-dark">{{ incident.severity }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ incident.severity }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ incident.status }}</td>
+                            <td>{{ incident.created_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+
+
+<!-- ===================== -->
+<!-- Chart.js Script -->
+<!-- ===================== -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+
+    const severityData = {
+        labels: {{ severity_stats | map(attribute='severity') | list | tojson }},
+        datasets: [{
+            label: 'Incidents',
+            data: {{ severity_stats | map(attribute='count') | list | tojson }},
+            backgroundColor: ['#dc3545', '#ffc107', '#6c757d']
+        }]
+    };
+
+    const statusData = {
+    labels: ['Open', 'Closed'],
+    datasets: [{
+        label: 'Incidents',
+        data: [
+            {{ open_closed['Open'] }},
+            {{ open_closed['Closed'] }}
+        ],
+        backgroundColor: ['#0d6efd', '#198754']
+        }]
+    };
+
+    new Chart(document.getElementById('statusChart'), {
+        type: 'bar',
+        data: statusData,
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+        new Chart(document.getElementById('severityChart'), {
+            type: 'doughnut',
+            data: severityData
+        });
+    
+
+        const trendData = {
+            labels: {{ trend | map(attribute='date') | map('string') | list | tojson }},
+            datasets: [{
+                label: 'Incidents Created',
+                data: {{ trend | map(attribute='count') | list | tojson }},
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13,110,253,0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        };
+
+        new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: trendData,
+        options: {
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+
+{% endblock %}
