@@ -95,14 +95,9 @@ data-status="{{ inc.status }}">
 <span>Created: {{ inc.created_at }}</span>
 </div>
 
-<!-- AI PREVIEW -->
+<!-- SAFE AI PREVIEW -->
 <div class="ai-preview">
-{% set ai = inc.ai_analysis or "" %}
-{% if "fix" in ai.lower() %}
-{{ ai.split("fix")[1][:120] }}...
-{% else %}
-{{ ai[:120] }}...
-{% endif %}
+{{ inc.ai_analysis[:120] if inc.ai_analysis else "No AI analysis available" }}...
 </div>
 
 </div>
@@ -188,13 +183,6 @@ z-index:1000;
 margin-bottom:12px;
 }
 
-.filter-section label{
-font-weight:600;
-font-size:14px;
-display:block;
-margin-bottom:4px;
-}
-
 /* STATS */
 .stats-bar{
 display:flex;
@@ -230,6 +218,7 @@ gap:20px;
 
 /* FIXED LAYOUT */
 .incident-left{flex:2;}
+
 .incident-middle{
 flex:1;
 display:flex;
@@ -237,6 +226,7 @@ gap:10px;
 align-items:center;
 justify-content:center;
 }
+
 .incident-right{
 flex:1;
 display:flex;
@@ -293,11 +283,6 @@ font-size:13px;
 .status.Resolved{background:#2ecc71;}
 
 /* BUTTONS */
-.incident-right{
-display:flex;
-gap:10px;
-}
-
 .btn-view{
 background:#3498db;
 color:white;
